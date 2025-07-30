@@ -5014,33 +5014,40 @@ ${requestData.department} ${requestData.requestedBy}`;
             const form = document.getElementById('purchase-form');
             const formData = new FormData(form);
             
-// 폼 필수 필드 확인
-const title = formData.get('title');
-const item = formData.get('item');
-const quantity = formData.get('quantity');
-const budget = formData.get('budget');
-const reason = formData.get('reason');
-const requestedBy = formData.get('requestedBy');
-const department = formData.get('department');
-const priority = formData.get('priority') || '보통';
+            // 폼 필수 필드 확인
+            const title = formData.get('title');
+            const item = formData.get('item');
+            const quantity = formData.get('quantity');
+            const budget = document.getElementById('purchase-budget').value; // ← 직접 읽기로 변경
+            const reason = formData.get('reason');
+            const requestedBy = formData.get('requestedBy');
+            const department = formData.get('department');
+            const priority = formData.get('priority') || '보통';
 
-// 디버깅: 실제 입력값 확인
-console.log('=== 기안서 생성 디버깅 ===');
-console.log('title:', title);
-console.log('item:', item);
-console.log('quantity:', quantity);
-console.log('budget:', budget);
-console.log('reason:', reason);
-console.log('requestedBy:', requestedBy);
-console.log('department:', department);
-console.log('priority:', priority);
+            // 디버깅: 실제 입력값 확인
+            console.log('=== 기안서 생성 디버깅 (수정 후) ===');
+            console.log('title:', title);
+            console.log('item:', item);
+            console.log('quantity:', quantity);
+            console.log('budget:', budget, '(길이:', budget?.length, ')');
+            console.log('reason:', reason);
+            console.log('requestedBy:', requestedBy);
+            console.log('department:', department);
+            console.log('priority:', priority);
 
-if (!title || !item || !quantity || !budget || !reason || !requestedBy || !department) {
-    console.log('❌ 누락된 필드가 있습니다!');
-    alert('모든 필수 필드를 입력해주세요.');
-    return;
-}
-            
+            if (!title || !item || !quantity || !budget || !reason || !requestedBy || !department) {
+                console.log('❌ 누락된 필드:', {
+                    title: !title,
+                    item: !item, 
+                    quantity: !quantity,
+                    budget: !budget,
+                    reason: !reason,
+                    requestedBy: !requestedBy,
+                    department: !department
+                });
+                alert('모든 필수 필드를 입력해주세요.');
+                return;
+            }            
             const quoteFile = document.getElementById('purchase-quote-file').files[0];
             
             const requestData = {
