@@ -5014,20 +5014,20 @@ ${requestData.department} ${requestData.requestedBy}`;
             const form = document.getElementById('purchase-form');
             const formData = new FormData(form);
             
-            // 폼 필수 필드 확인
+// 폼 필수 필드 확인
 const title = formData.get('title') || formData.get('item');
 const item = formData.get('item');
 const quantity = formData.get('quantity');
-const budget = cleanBudgetInput(formData.get('budget'));
+const budget = formData.get('budget');
 const reason = formData.get('reason');
 const requestedBy = formData.get('requestedBy');
 const department = formData.get('department');
 const priority = formData.get('priority') || '보통';
 
 if (!title || !item || !quantity || !budget || !reason || !requestedBy || !department) {
-                alert('모든 필수 필드를 입력해주세요.');
-                return;
-            }
+    alert('모든 필수 필드를 입력해주세요.');
+    return;
+}
             
             const quoteFile = document.getElementById('purchase-quote-file').files[0];
             
