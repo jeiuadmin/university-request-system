@@ -1610,7 +1610,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
                 <h1>🏢 총무처 통합 요청 관리 시스템</h1>
-                <p>구매 요청 및 시설 관리 통합 플랫폼</p>
+                <p>총무처 구매 요청 및 시설 관리 통합 플랫폼</p>
             </div>
             <div id="sync-status" style="background: rgba(255, 255, 255, 0.1); padding: 0.5rem 1rem; border-radius: 20px; backdrop-filter: blur(10px); min-width: 150px; text-align: center;">
                 <span style="color: #f59e0b;">🔄</span>
@@ -1713,7 +1713,15 @@
                         <label for="purchase-budget">
                             <span class="emoji">💰</span>예산 (원) *
                         </label>
-                        <input type="text" id="purchase-budget" placeholder="예: 1000000 또는 1,000,000" required pattern="[0-9,]+" title="숫자만 입력하세요 (쉼표 사용 가능)">
+                        <input 
+                            type="text" 
+                            id="purchase-budget" 
+                            name="budget"
+                            placeholder="예: 500000, 1,000,000"
+                            pattern="[0-9,]+"
+                            title="숫자와 콤마만 입력 가능합니다"
+                            required
+                        />
                     </div>
 
                     <div class="form-group">
@@ -2013,7 +2021,6 @@
                         <span class="emoji">🔑</span>로그인
                     </button>
                 </form>
-                
             </div>
             
                             <!-- 관리자 패널 -->
@@ -2266,7 +2273,6 @@
                                 <tr>
                                     <th>유형</th>
                                     <th>제목/물품</th>
-                                    <th>수량</th>
                                     <th>예산</th>
                                     <th>우선순위</th>
                                     <th>상태</th>
@@ -2641,7 +2647,7 @@
 
     <!-- 푸터 -->
     <footer class="footer">
-        <p><strong>© 2024 통합 요청 관리 시스템. All rights reserved.</strong></p>
+        <p><strong>© 2024 총무처 통합 요청 관리 시스템. All rights reserved.</strong></p>
         <p>구매 및 시설 관리 문의: <strong>support@system.com</strong></p>
     </footer>
 
@@ -2775,11 +2781,16 @@
                 }
             }
         }
-        // 예산 입력값 정리 (쉼표 제거, 숫자만 추출)
-        function cleanBudgetInput(value) {
-            if (!value) return '';
-            return value.toString().replace(/[^0-9]/g, '');
+
+        // 예산 입력 정리 함수
+        function cleanBudgetInput(budgetStr) {
+            if (!budgetStr) return 0;
+            // 숫자와 콤마만 남기고 모든 문자 제거
+            const cleanStr = budgetStr.replace(/[^\d,]/g, '');
+            // 콤마 제거 후 숫자로 변환
+            return parseInt(cleanStr.replace(/,/g, '')) || 0;
         }
+
         // 구매 요청 제출
         async function submitPurchaseRequest(e) {
             e.preventDefault();
@@ -2788,6 +2799,10 @@
             const fileInput = document.getElementById('purchase-quote-file');
             const file = fileInput.files[0];
             
+            // 예산 필드 직접 읽기 및 정리
+            const budgetStr = document.getElementById('purchase-budget').value.trim();
+            const cleanBudget = cleanBudgetInput(budgetStr);
+            
             const requestData = {
                 id: requestIdCounter++,
                 type: 'purchase',
@@ -2795,7 +2810,7 @@
                 department: formData.get('department'),
                 item: formData.get('item'),
                 quantity: formData.get('quantity'),
-                budget: parseInt(cleanBudgetInput(formData.get('budget'))),
+                budget: cleanBudget,
                 reason: formData.get('reason'),
                 status: '대기',
                 requestedBy: formData.get('requestedBy'),
@@ -3247,7 +3262,7 @@
                 <td>
                     ${request.type === 'purchase' && request.budget 
                         ? `<span style="font-weight: 600; color: #059669;">${request.budget.toLocaleString()}원</span>` 
-                        : request.type === 'purchase' ? '-' : '-'}
+                        : '-'}
                 </td>
                 <td>
                     ${request.type === 'facility' 
@@ -4002,7 +4017,7 @@
 
         // 페이지 로드 완료 메시지
         window.onload = function() {
-            console.log('🚀 통합 요청 관리 시스템이 준비되었습니다!');
+            console.log('🚀 총무처 통합 요청 관리 시스템이 준비되었습니다!');
             console.log('💡 요청을 제출하면 콘솔에서 데이터를 확인할 수 있습니다.');
         };
 
@@ -4019,15 +4034,15 @@
                     
                     data = filteredRequests.map(request => ({
                         '유형': request.type === 'purchase' ? '구매 요청' : '시설 관리',
-                        '제목/물품': request.title || request.item || request.facility,
-                        '수량/위치': request.quantity ? formatQuantity(request.quantity) : request.location || '-',
+                        '제목/물품': request.type === 'purchase' 
+                            ? `${request.item} (수량: ${formatQuantity(request.quantity)})` 
+                            : `${request.title} (${request.facilityType})${request.location ? ` - ${request.location}` : ''}`,
                         '예산': request.type === 'purchase' && request.budget ? request.budget.toLocaleString() + '원' : '-',
                         '우선순위': request.priority || '보통',
                         '상태': request.status,
                         '요청자': request.requestedBy,
                         '부서': request.department,
-                        '등록일': new Date(request.createdAt).toLocaleDateString('ko-KR'),
-                        '사유/설명': request.reason || request.description || '-'
+                        '등록일': new Date(request.createdAt).toLocaleDateString('ko-KR')
                     }));
                     
                 } else if (type === 'purchase') {
@@ -4741,6 +4756,7 @@
 2. 구매 내용
    - 물품명: ${requestData.item}
    - 수량: ${formatQuantity(requestData.quantity)}
+   - 예산: ${requestData.budget ? requestData.budget.toLocaleString() + '원' : '미정'}
    - 우선순위: ${requestData.priority}
    - 요청자: ${requestData.requestedBy} (${requestData.department})
 
@@ -4758,15 +4774,15 @@ ${requestData.department} ${requestData.requestedBy}`;
             } else {
                 draftText = `기 안
 
-제목: ${requestData.facility} 시설 수리 요청
+제목: ${requestData.title} 시설 수리 요청
 
 1. 목적
    시설 유지보수를 통한 안전하고 쾌적한 교육환경 조성
 
 2. 수리 내용
-   - 시설명: ${requestData.facility}
+   - 시설명: ${requestData.title}
    - 시설 유형: ${requestData.facilityType || '일반시설'}
-   - 위치: ${requestData.location}
+   - 위치: ${requestData.location || '미정'}
    - 문제상황: ${requestData.description}
    - 우선순위: ${requestData.priority}
    - 요청자: ${requestData.requestedBy} (${requestData.department})
@@ -5015,17 +5031,17 @@ ${requestData.department} ${requestData.requestedBy}`;
             const formData = new FormData(form);
             
             // 폼 필수 필드 확인
-            const title = formData.get('title');
+            const title = formData.get('title') || formData.get('item');
             const item = formData.get('item');
             const quantity = formData.get('quantity');
-            const budget = document.getElementById('purchase-budget').value; // ← 직접 읽기로 변경
+            const budget = document.getElementById('purchase-budget').value.trim(); // 직접 읽기
             const reason = formData.get('reason');
             const requestedBy = formData.get('requestedBy');
             const department = formData.get('department');
             const priority = formData.get('priority') || '보통';
-
-            // 디버깅: 실제 입력값 확인
-            console.log('=== 기안서 생성 디버깅 (수정 후) ===');
+            
+            // 디버깅 로그
+            console.log('=== 기안서 생성 디버깅 ===');
             console.log('title:', title);
             console.log('item:', item);
             console.log('quantity:', quantity);
@@ -5034,7 +5050,7 @@ ${requestData.department} ${requestData.requestedBy}`;
             console.log('requestedBy:', requestedBy);
             console.log('department:', department);
             console.log('priority:', priority);
-
+            
             if (!title || !item || !quantity || !budget || !reason || !requestedBy || !department) {
                 console.log('❌ 누락된 필드:', {
                     title: !title,
@@ -5047,11 +5063,15 @@ ${requestData.department} ${requestData.requestedBy}`;
                 });
                 alert('모든 필수 필드를 입력해주세요.');
                 return;
-            }            
+            }
+            
             const quoteFile = document.getElementById('purchase-quote-file').files[0];
             
+            // 예산 정리
+            const cleanBudget = cleanBudgetInput(budget);
+            
             const requestData = {
-                title, item, quantity, reason, requestedBy, department, priority,
+                title, item, quantity, budget: cleanBudget, reason, requestedBy, department, priority,
                 quoteFile: !!quoteFile
             };
             
@@ -5070,7 +5090,7 @@ ${requestData.department} ${requestData.requestedBy}`;
             const formData = new FormData(form);
             
             // 폼 필수 필드 확인
-            const facility = formData.get('facility');
+            const title = formData.get('title');
             const location = formData.get('location');
             const description = formData.get('description');
             const requestedBy = formData.get('requestedBy');
@@ -5078,7 +5098,24 @@ ${requestData.department} ${requestData.requestedBy}`;
             const priority = formData.get('priority') || '보통';
             const facilityType = formData.get('facilityType');
             
-            if (!facility || !location || !description || !requestedBy || !department || !facilityType) {
+            // 디버깅 로그
+            console.log('=== 시설 관리 기안서 생성 디버깅 ===');
+            console.log('title:', title);
+            console.log('location:', location);
+            console.log('description:', description);
+            console.log('requestedBy:', requestedBy);
+            console.log('department:', department);
+            console.log('priority:', priority);
+            console.log('facilityType:', facilityType);
+            
+            if (!title || !description || !requestedBy || !department || !facilityType) {
+                console.log('❌ 누락된 필드:', {
+                    title: !title,
+                    description: !description,
+                    requestedBy: !requestedBy,
+                    department: !department,
+                    facilityType: !facilityType
+                });
                 alert('모든 필수 필드를 입력해주세요.');
                 return;
             }
@@ -5086,7 +5123,7 @@ ${requestData.department} ${requestData.requestedBy}`;
             const photos = document.getElementById('facility-photo').files;
             
             const requestData = {
-                facility, location, description, requestedBy, department, priority, facilityType,
+                title, location, description, requestedBy, department, priority, facilityType,
                 facilityPhotos: Array.from(photos)
             };
             
@@ -5460,7 +5497,7 @@ ${requestData.department} ${requestData.requestedBy}`;
                     data.push({
                         '유형': cells[0].textContent.trim(),
                         '제목/물품': cells[1].textContent.trim(),
-                        '수량/위치': cells[2].textContent.trim(),
+                        '예산': cells[2].textContent.trim(),
                         '우선순위': cells[3].textContent.trim(),
                         '상태': cells[4].textContent.trim(),
                         '요청자': cells[5].textContent.trim(),
