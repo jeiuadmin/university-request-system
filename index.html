@@ -1713,15 +1713,7 @@
                         <label for="purchase-budget">
                             <span class="emoji">💰</span>예산 (원) *
                         </label>
-                        <input 
-                            type="number" 
-                            id="purchase-budget" 
-                            name="budget"
-                            placeholder="예: 500000, 1000000"
-                            min="1"
-                            step="1000"
-                            required
-                        />
+                        <input type="text" id="purchase-budget" placeholder="예: 1000000 또는 1,000,000" required pattern="[0-9,]+" title="숫자만 입력하세요 (쉼표 사용 가능)">
                     </div>
 
                     <div class="form-group">
@@ -2783,7 +2775,11 @@
                 }
             }
         }
-
+        // 예산 입력값 정리 (쉼표 제거, 숫자만 추출)
+        function cleanBudgetInput(value) {
+            if (!value) return '';
+            return value.toString().replace(/[^0-9]/g, '');
+        }
         // 구매 요청 제출
         async function submitPurchaseRequest(e) {
             e.preventDefault();
@@ -2799,7 +2795,7 @@
                 department: formData.get('department'),
                 item: formData.get('item'),
                 quantity: formData.get('quantity'),
-                budget: parseInt(formData.get('budget')),
+                budget: parseInt(cleanBudgetInput(formData.get('budget'))),
                 reason: formData.get('reason'),
                 status: '대기',
                 requestedBy: formData.get('requestedBy'),
@@ -5019,15 +5015,16 @@ ${requestData.department} ${requestData.requestedBy}`;
             const formData = new FormData(form);
             
             // 폼 필수 필드 확인
-            const title = formData.get('title') || formData.get('item');
-            const item = formData.get('item');
-            const quantity = formData.get('quantity');
-            const reason = formData.get('reason');
-            const requestedBy = formData.get('requestedBy');
-            const department = formData.get('department');
-            const priority = formData.get('priority') || '보통';
-            
-            if (!title || !item || !quantity || !reason || !requestedBy || !department) {
+const title = formData.get('title') || formData.get('item');
+const item = formData.get('item');
+const quantity = formData.get('quantity');
+const budget = cleanBudgetInput(formData.get('budget'));
+const reason = formData.get('reason');
+const requestedBy = formData.get('requestedBy');
+const department = formData.get('department');
+const priority = formData.get('priority') || '보통';
+
+if (!title || !item || !quantity || !budget || !reason || !requestedBy || !department) {
                 alert('모든 필수 필드를 입력해주세요.');
                 return;
             }
