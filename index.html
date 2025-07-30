@@ -5049,137 +5049,23 @@ ${requestData.department} ${requestData.requestedBy}`;
         }
         
         // 시설 관리 기안서 생성 (폼 데이터 사용)
-function generateFacilityDraft() {
-    console.log('🔧 시설 관리 기안서 생성 시작...');
-    
-    // 모든 필드 값 가져오기
-    const title = document.getElementById('facility-title')?.value?.trim() || '';
-    const facilityType = document.getElementById('facility-type')?.value?.trim() || '';
-    const priority = document.getElementById('facility-priority')?.value?.trim() || '';
-    const requestedBy = document.getElementById('facility-requestedBy')?.value?.trim() || '';
-    const department = document.getElementById('facility-department')?.value?.trim() || '';
-    const phone = document.getElementById('facility-phone')?.value?.trim() || '';
-    const location = document.getElementById('facility-location')?.value?.trim() || '';
-    const description = document.getElementById('facility-description')?.value?.trim() || '';
-    
-    console.log('📋 입력된 필드들:', {
-        title, facilityType, priority, requestedBy, 
-        department, phone, location, description
-    });
-    
-    // 필수 필드만 검증 (상세 설명 포함)
-    const requiredFields = [
-        { value: title, name: '요청 제목', id: 'facility-title' },
-        { value: facilityType, name: '시설 유형', id: 'facility-type' },
-        { value: requestedBy, name: '요청자명', id: 'facility-requestedBy' },
-        { value: department, name: '소속 부서', id: 'facility-department' },
-        { value: description, name: '상세 설명', id: 'facility-description' }
-    ];
-    
-    // 누락된 필수 필드 찾기
-    const missingFields = requiredFields.filter(field => !field.value);
-    
-    if (missingFields.length > 0) {
-        console.error('❌ 누락된 필수 필드:', missingFields);
-        
-        let errorMessage = '❌ 다음 필수 필드를 입력해주세요:\n\n';
-        missingFields.forEach(field => {
-            errorMessage += `• ${field.name}\n`;
-        });
-        errorMessage += '\n※ 모든 필수 필드(*)를 입력한 후 다시 시도해주세요.';
-        
-        alert(errorMessage);
-        
-        // 첫 번째 누락 필드에 포커스
-        const firstMissingField = document.getElementById(missingFields[0].id);
-        if (firstMissingField) {
-            firstMissingField.focus();
-            firstMissingField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
-        return;
-    }
-    
-    console.log('✅ 모든 필수 필드 입력 완료');
-    
-    // 현재 날짜/시간
-    const now = new Date();
-    const requestDate = now.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-    const requestTime = now.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    // 우선순위 한글 변환
-    const priorityText = {
-        '낮음': '낮음',
-        '보통': '보통', 
-        '높음': '높음',
-        '긴급': '긴급'
-    }[priority] || '보통';
-    
-    // 기안서 내용 생성
-    const draftContent = `시설 관리 요청서
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-1. 기본 정보
-   
-   📋 요청 제목    : ${title}
-   🏗️ 시설 유형    : ${facilityType}
-   ⚡ 우선순위     : ${priorityText}
-   👤 요청자      : ${requestedBy}
-   🏢 소속 부서    : ${department}${phone ? `
-   📞 연락처      : ${phone}` : ''}${location ? `
-   📍 위치       : ${location}` : ''}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-2. 상세 내용
-
-${description.split('\n').map(line => `   ${line}`).join('\n')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-3. 요청 정보
-   
-   📅 요청일      : ${requestDate}
-   🕐 요청시간     : ${requestTime}
-   💻 시스템      : 총무처 통합 요청 관리 시스템
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-※ 본 요청서는 시스템에서 자동 생성되었습니다.
-※ 추가 문의사항이 있으시면 담당 부서로 연락 바랍니다.`;
-    
-    // 미리보기에 표시
-    const previewElement = document.getElementById('facility-draft-preview');
-    if (previewElement) {
-        previewElement.textContent = draftContent;
-        previewElement.style.display = 'block';
-        
-        // 부드럽게 스크롤하여 미리보기 보여주기
-        previewElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-        });
-        
-        console.log('✅ 기안서 미리보기 생성 완료');
-        
-        // 성공 메시지
-        setTimeout(() => {
-            alert('✅ 시설 관리 기안서가 성공적으로 생성되었습니다!\n\n📋 클립보드 복사 버튼을 이용해서 복사해보세요.');
-        }, 500);
-        
-    } else {
-        console.error('❌ facility-draft-preview 요소를 찾을 수 없습니다.');
-        alert('❌ 미리보기 영역을 찾을 수 없습니다. 페이지를 새로고침 후 다시 시도해주세요.');
-    }
-}
+        function generateFacilityDraft() {
+            const form = document.getElementById('facility-form');
+            const formData = new FormData(form);
+            
+            // 폼 필수 필드 확인
+            const facility = formData.get('facility');
+            const location = formData.get('location');
+            const description = formData.get('description');
+            const requestedBy = formData.get('requestedBy');
+            const department = formData.get('department');
+            const priority = formData.get('priority') || '보통';
+            const facilityType = formData.get('facilityType');
+            
+            if (!facility || !location || !description || !requestedBy || !department || !facilityType) {
+                alert('모든 필수 필드를 입력해주세요.');
+                return;
+            }
             
             const photos = document.getElementById('facility-photo').files;
             
