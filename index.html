@@ -33,32 +33,12 @@
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="msapplication-TileImage" content="icon-144.png">
     
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, deleteDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        
-        // Firebase 설정 (사용자가 실제 프로젝트 설정으로 교체해야 함)
-        const firebaseConfig = {
-            apiKey: "your-api-key-here",
-            authDomain: "your-project.firebaseapp.com",
-            projectId: "your-project-id",
-            storageBucket: "your-project.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "your-app-id"
-        };
-        
-        // Firebase 초기화
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // 전역 변수로 설정
-        window.firebaseDB = db;
-        window.firebaseAuth = auth;
-        
-        console.log('🔥 Firebase 초기화 완료');
+    <!-- 로컬 모드로 운영 (Firebase 없이) -->
+    <script>
+        // 로컬 저장소 기반 시스템으로 동작
+        window.firebaseDB = null;
+        window.firebaseAuth = null;
+        console.log('💾 로컬 모드로 초기화 완료');
     </script>
     
     <style>
@@ -5698,146 +5678,80 @@ ${requestData.department} ${requestData.requestedBy}`;
             });
         }
         
-        // Firebase 인증 (익명 로그인)
+        // 로컬 모드 초기화
         async function initializeFirebaseAuth() {
             try {
-                await waitForFirestore();
-                const auth = window.firebaseAuth;
+                // Firebase 비활성화, 로컬 모드로 동작
+                isFirebaseConnected = false;
                 
-                // 익명 로그인
-                await auth.signInAnonymously();
-                isFirebaseConnected = true;
+                console.log('💾 로컬 모드로 초기화됨');
+                showSyncStatus('offline', '로컬 모드 (데이터는 브라우저에 저장됨)');
                 
-                console.log('🔥 Firebase 인증 완료');
-                showSyncStatus('connected', '실시간 동기화 연결됨');
-                
-                // 기존 데이터를 Firebase로 마이그레이션
-                await migrateLocalDataToFirebase();
-                
-                // 실시간 리스너 설정
-                setupRealtimeListeners();
+                // 로컬 데이터 로드
+                loadFromLocalStorage();
                 
             } catch (error) {
-                console.error('❌ Firebase 인증 실패:', error);
-                handleFirebaseError(error);
+                console.error('❌ 로컬 모드 초기화 실패:', error);
+                showSyncStatus('error', '초기화 실패');
             }
         }
         
-        // 로컬 데이터를 Firebase로 마이그레이션
-        async function migrateLocalDataToFirebase() {
-            try {
-                const localRequests = JSON.parse(localStorage.getItem('requests') || '[]');
-                if (localRequests.length > 0) {
-                    console.log('📦 로컬 데이터를 Firebase로 마이그레이션 중...', localRequests.length, '개');
-                    
-                    for (const request of localRequests) {
-                        if (!request.firebaseId) {
-                            await saveRequestToFirebase(request, false); // 실시간 업데이트 방지
-                        }
-                    }
-                    
-                    console.log('✅ 마이그레이션 완료');
-                }
-            } catch (error) {
-                console.error('❌ 마이그레이션 실패:', error);
-            }
-        }
+        // (마이그레이션 함수 제거됨 - 로컬 모드에서는 불필요)
         
-        // 요청 데이터를 Firebase에 저장
+        // 요청 데이터를 로컬 저장소에 저장
         async function saveRequestToFirebase(requestData, shouldTriggerUpdate = true) {
             try {
-                if (!isFirebaseConnected) {
-                    throw new Error('Firebase 연결이 끊어짐');
-                }
-                
-                const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                const db = window.firebaseDB;
-                
-                // Firestore에 저장
-                const docRef = await addDoc(collection(db, 'requests'), {
+                // 로컬 저장소에만 저장
+                const updatedRequest = {
                     ...requestData,
                     createdAt: requestData.createdAt || new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
+                    updatedAt: new Date().toISOString(),
+                    localId: Date.now() + Math.random() // 고유 ID 생성
+                };
                 
-                console.log('🔥 Firebase 저장 완료:', docRef.id);
+                saveToLocalStorage(updatedRequest);
+                console.log('💾 로컬 저장 완료:', updatedRequest.localId);
                 
-                // 로컬 데이터에 Firebase ID 추가
-                const updatedRequest = { ...requestData, firebaseId: docRef.id };
-                
-                return docRef.id;
+                return updatedRequest.localId;
                 
             } catch (error) {
-                console.error('❌ Firebase 저장 실패:', error);
-                // 로컬 스토리지에 백업 저장
-                saveToLocalStorage(requestData);
-                showSyncStatus('error', 'Firebase 저장 실패, 로컬에 백업됨');
+                console.error('❌ 로컬 저장 실패:', error);
+                showSyncStatus('error', '저장 실패');
                 throw error;
             }
         }
         
-        // Firebase에서 요청 상태 업데이트
-        async function updateRequestInFirebase(firebaseId, updates) {
+        // 로컬 저장소에서 요청 상태 업데이트
+        async function updateRequestInFirebase(localId, updates) {
             try {
-                if (!isFirebaseConnected || !firebaseId) {
-                    throw new Error('Firebase 연결 또는 ID 없음');
+                // 로컬 저장소에서 업데이트
+                const requests = JSON.parse(localStorage.getItem('requests') || '[]');
+                const requestIndex = requests.findIndex(req => req.localId === localId || req.id === localId);
+                
+                if (requestIndex !== -1) {
+                    requests[requestIndex] = {
+                        ...requests[requestIndex],
+                        ...updates,
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem('requests', JSON.stringify(requests));
+                    console.log('💾 로컬 업데이트 완료:', localId);
+                    
+                    // 화면 새로고침
+                    loadFromLocalStorage();
+                } else {
+                    throw new Error('요청을 찾을 수 없습니다');
                 }
                 
-                const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                const db = window.firebaseDB;
-                
-                await updateDoc(doc(db, 'requests', firebaseId), {
-                    ...updates,
-                    updatedAt: new Date().toISOString()
-                });
-                
-                console.log('🔥 Firebase 업데이트 완료:', firebaseId);
-                
             } catch (error) {
-                console.error('❌ Firebase 업데이트 실패:', error);
-                showSyncStatus('error', 'Firebase 업데이트 실패');
+                console.error('❌ 로컬 업데이트 실패:', error);
+                showSyncStatus('error', '업데이트 실패');
                 throw error;
             }
         }
         
-        // 실시간 리스너 설정
-        async function setupRealtimeListeners() {
-            try {
-                const { collection, query, orderBy, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                const db = window.firebaseDB;
-                
-                const q = query(collection(db, 'requests'), orderBy('createdAt', 'desc'));
-                
-                // 실시간 리스너
-                onSnapshot(q, (snapshot) => {
-                    const updatedRequests = [];
-                    snapshot.forEach((doc) => {
-                        updatedRequests.push({
-                            firebaseId: doc.id,
-                            ...doc.data()
-                        });
-                    });
-                    
-                    console.log('🔥 실시간 업데이트:', updatedRequests.length, '개');
-                    
-                    // 전역 요청 배열 업데이트
-                    requests = updatedRequests;
-                    
-                    // UI 업데이트
-                    if (isAdmin) {
-                        refreshAdminUI();
-                    }
-                    
-                    showSyncStatus('synced', `${updatedRequests.length}개 요청 동기화됨`);
-                }, (error) => {
-                    console.error('❌ 실시간 리스너 오류:', error);
-                    showSyncStatus('error', '실시간 동기화 오류');
-                });
-                
-            } catch (error) {
-                console.error('❌ 실시간 리스너 설정 실패:', error);
-            }
-        }
+        // (실시간 리스너 제거됨 - 로컬 모드에서는 불필요)
         
         // 관리자 UI 새로고침
         function refreshAdminUI() {
@@ -5909,29 +5823,15 @@ ${requestData.department} ${requestData.requestedBy}`;
             }
         }
         
-                    // 페이지 로드 시 Firebase 초기화
+                    // 페이지 로드 시 로컬 모드 초기화
         document.addEventListener('DOMContentLoaded', function() {
             // Service Worker 등록
             registerServiceWorker();
             
-            // Firebase 연결 시도
+            // 로컬 모드 초기화
             setTimeout(() => {
                 initializeFirebaseAuth();
-            }, 500);
-            
-            // 네트워크 상태 모니터링
-            window.addEventListener('online', function() {
-                console.log('🌐 네트워크 연결됨');
-                if (!isFirebaseConnected) {
-                    initializeFirebaseAuth();
-                }
-            });
-            
-            window.addEventListener('offline', function() {
-                console.log('📱 오프라인 상태');
-                showSyncStatus('offline', '오프라인 모드');
-                isFirebaseConnected = false;
-            });
+            }, 100);
             
             // PWA 설치 프롬프트 처리
             setupPWAInstallPrompt();
@@ -5943,7 +5843,7 @@ ${requestData.department} ${requestData.requestedBy}`;
         async function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
                 try {
-                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    const registration = await navigator.serviceWorker.register('./sw.js');
                     console.log('✅ Service Worker 등록 성공:', registration.scope);
                     
                     // 업데이트 확인
