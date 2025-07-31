@@ -33,13 +33,53 @@
     <meta name="msapplication-TileColor" content="#3b82f6">
     <meta name="msapplication-TileImage" content="icon-144.png">
     
-    <!-- 로컬 모드로 운영 (Firebase 없이) -->
-    <script>
-        // 로컬 저장소 기반 시스템으로 동작
-        window.firebaseDB = null;
-        window.firebaseAuth = null;
-        console.log('💾 로컬 모드로 초기화 완료');
-    </script>
+<!-- Firebase SDK -->
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc, deleteDoc, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    
+    // Firebase 설정 (실제 프로젝트 설정)
+    const firebaseConfig = {
+        apiKey: "AIzaSyCZJrfp9dLLqsDLLvrHNT70MSlkqUC0oxc",
+        authDomain: "university-request-system-test.firebaseapp.com",
+        projectId: "university-request-system-test",
+        storageBucket: "university-request-system-test.firebasestorage.app",
+        messagingSenderId: "304777615879",
+        appId: "1:304777615879:web:119f22aed27c3a4d3e68a2"
+    };
+    
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // 전역 변수로 설정
+    window.firebaseDB = db;
+    window.firebaseAuth = auth;
+    
+    console.log('🔥 Firebase 초기화 완료');
+</script>
+    const firebaseConfig = {
+        apiKey: "여기에-실제-API-키-입력",
+        authDomain: "university-request-system-test.firebaseapp.com",
+        projectId: "university-request-system-test",
+        storageBucket: "university-request-system-test.appspot.com",
+        messagingSenderId: "실제-메신저-센더-ID",
+        appId: "실제-앱-ID"
+    };
+    
+    // Firebase 초기화
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // 전역 변수로 설정
+    window.firebaseDB = db;
+    window.firebaseAuth = auth;
+    
+    console.log('🔥 Firebase 초기화 완료');
+</script>
     
     <style>
         * {
